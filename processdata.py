@@ -33,7 +33,10 @@ def parseaction(actionstring):
     created = re.search(re.compile(r"[Cc]reated"), actionstring)
     reopened = re.search(re.compile(r"[Rr]e-open"), actionstring)
     if postno:
-        result["PostNumber"] = actionstring[postno.regs[0][0]:postno.regs[0][1]]
+        if thread:
+            result["ThreadNumber"] = actionstring[postno.regs[0][0]:postno.regs[0][1]]
+        else:
+            result["PostNumber"] = actionstring[postno.regs[0][0]:postno.regs[0][1]]
     if delete:
         if post:
             if file:
@@ -108,11 +111,12 @@ def readfile(filename):
     except:
         sys.exit("input file error")
 
-def writecsv(timeactionlist):
-    filename = "resultfile" + time.strftime("%Y:%m:%d-%H:%M:%S") + ".csv"
+def writecsv(timeactionlist, board):
+    filename = "resultfile-" + board + "-" + time.strftime("%Y:%m:%d-%H:%M:%S") + ".csv"
+    print("Writing processed data to output CSV file " + filename)
     with open(filename, "w") as outputfile:
         writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(["Type", "Post or Thread", "Reason", "Length"])
+        writer.writerow(["Type", "Post", "Thread", "Reason", "Length", "Timestamp"])
         for linedict in timeactionlist:
             line = linedict.get("actiondict")
             if line.get("Type"):
@@ -123,6 +127,10 @@ def writecsv(timeactionlist):
                 post = line.get("PostNumber")
             else:
                 post = ""
+            if line.get("ThreadNumber"):
+                thread = line.get("ThreadNumber")
+            else:
+                thread = ""
             if line.get("Reason"):
                 reason = line.get("Reason")
             else:
@@ -131,13 +139,15 @@ def writecsv(timeactionlist):
                 length = line.get("Length")
             else:
                 length = ""
-            row = [type, post, reason, length]
+            timeval = linedict.get("time")
+            timestamp = time.strftime("%m/%d/%Y, %H:%M:%S", timeval)
+            row = [type, post, thread, reason, length, timestamp]
             writer.writerow(row)
 
 if len(sys.argv) is not 2:
     print("Usage: \"processdata.py <datafile>\"")
     sys.exit("No valid filename")
-else:
-    liststringdict = readfile(sys.argv[1])
-    writecsv(liststringdict)
+#else:
+#liststringdict = readfile(sys.argv[1])
+ #   writecsv(liststringdict)
 
