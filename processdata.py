@@ -8,30 +8,34 @@ def parsetimestring(timestring):
     return timeobj
 
 def parseaction(actionstring):
+    def makeregex(string):
+        return re.search(re.compile(string), actionstring)
+
     result = {}
-    delete = re.search(re.compile(r"[Dd]ele"), actionstring)
-    post = re.search(re.compile(r"[Pp]ost"), actionstring)
-    postno = re.search(re.compile(r"#\d{4,8}"), actionstring)
-    ban = re.search(re.compile(r"[Bb]an"), actionstring)
-    locked = re.search(re.compile(r"[Ll]ock"), actionstring)
-    clear = re.search(re.compile(r"[Cc]lear"), actionstring)
-    report = re.search(re.compile(r"[Rr]eport"), actionstring)
-    file = re.search(re.compile(r"[Ff]ile"), actionstring)
-    bumplock = re.search(re.compile(r"[Bb]umplock"), actionstring)
-    dismiss = re.search(re.compile(r"[Dd]ismiss"), actionstring)
-    spoiler = re.search(re.compile(r"[Ss]poiler"), actionstring)
-    edit = re.search(re.compile(r"[Ee]dit"), actionstring)
-    cycle = re.search(re.compile(r"([Cc]ycle)|([Cc]yclical)"), actionstring)
-    demote = re.search(re.compile(r"[Dd]emote"), actionstring)
-    settings = re.search(re.compile(r"[Ss]ettings"), actionstring)
-    board = re.search(re.compile(r"[Bb]oard"), actionstring)
-    thread = re.search(re.compile(r"[Tt]hread"), actionstring)
-    promote = re.search(re.compile(r"[Pp]romote"), actionstring)
-    unstickie = re.search(re.compile(r"[Uu]nstickie"), actionstring)
-    stickie = re.search(re.compile(r"[Ss]tickie"), actionstring)
-    volunteer = re.search(re.compile(r"[Vv]olunteer"), actionstring)
-    created = re.search(re.compile(r"[Cc]reated"), actionstring)
-    reopened = re.search(re.compile(r"[Rr]e-open"), actionstring)
+    delete = makeregex(r"[Dd]ele")
+    post = makeregex(r"[Pp]ost")
+    postno = makeregex(r"#\d{4,8}")
+    ban = makeregex(r"[Bb]an")
+    locked = makeregex(r"[Ll]ock")
+    clear = makeregex(r"[Cc]lear")
+    report = makeregex(r"[Rr]eport")
+    file = makeregex(r"[Ff]ile")
+    bumplock = makeregex(r"[Bb]umplock")
+    dismiss = makeregex(r"[Dd]ismiss")
+    spoiler = makeregex(r"[Ss]poiler")
+    edit = makeregex(r"[Ee]dit")
+    cycle = makeregex(r"([Cc]ycle)|([Cc]yclical)")
+    demote = makeregex(r"[Dd]emote")
+    settings = makeregex(r"[Ss]ettings")
+    board = makeregex(r"[Bb]oard")
+    thread = makeregex(r"[Tt]hread")
+    promote = makeregex(r"[Pp]romote")
+    unstickie = makeregex(r"[Uu]nstickie")
+    stickie = makeregex(r"[Ss]tickie")
+    volunteer = makeregex(r"[Vv]olunteer")
+    created = makeregex(r"[Cc]reated")
+    reopened = makeregex(r"[Rr]e-open")
+
     if postno:
         if thread:
             result["ThreadNumber"] = actionstring[postno.regs[0][0]:postno.regs[0][1]]
@@ -116,38 +120,23 @@ def writecsv(timeactionlist, board):
     print("Writing processed data to output CSV file " + filename)
     with open(filename, "w") as outputfile:
         writer = csv.writer(outputfile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(["Type", "Post", "Thread", "Reason", "Length", "Timestamp"])
-        for linedict in timeactionlist:
-            line = linedict.get("actiondict")
-            if line.get("Type"):
-                type = line.get("Type")
-            else:
-                type = ""
-            if line.get("PostNumber"):
-                post = line.get("PostNumber")
-            else:
-                post = ""
-            if line.get("ThreadNumber"):
-                thread = line.get("ThreadNumber")
-            else:
-                thread = ""
-            if line.get("Reason"):
-                reason = line.get("Reason")
-            else:
-                reason = ""
-            if line.get("Length"):
-                length = line.get("Length")
-            else:
-                length = ""
-            timeval = linedict.get("time")
+        keys = ["Type", "PostNumber", "ThreadNumber", "Reason", "Length"]
+        writer.writerow(keys + ["Timestamp"] + ["RawString"])
+        for line in timeactionlist:
+            linedict = line.get("actiondict")
+            row = []
+            for key in keys:
+                row.append(linedict.get(key, ""))
+            timeval = line.get("time")
             timestamp = time.strftime("%m/%d/%Y, %H:%M:%S", timeval)
-            row = [type, post, thread, reason, length, timestamp]
-            writer.writerow(row)
+            writer.writerow(row + [timestamp] + [line.get("actionstring")])
 
-if len(sys.argv) is not 2:
-    print("Usage: \"processdata.py <datafile>\"")
-    sys.exit("No valid filename")
-#else:
-#liststringdict = readfile(sys.argv[1])
- #   writecsv(liststringdict)
+
+def main():
+    if len(sys.argv) is not 3:
+        print("Usage: \"processdata.py <datafile> <board>\"")
+        sys.exit("No valid filename")
+    else:
+        liststringdict = readfile(sys.argv[1])
+        writecsv(liststringdict, sys.argv[2])
 
